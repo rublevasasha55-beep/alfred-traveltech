@@ -1,0 +1,29 @@
+sequenceDiagram
+    autonumber
+    participant A as Flight API / email
+    participant I as Adapter / event queue
+    participant O as Trip Orchestrator
+    participant P as Plan B rules
+    participant N as Notification service
+    participant U as User
+    participant B as Booking provider
+    A->>I: status delayed/cancelled + event_id + observed_at
+    I->>I: validate, deduplicate, check freshness
+    alt valid and fresh event
+        I->>O: normalized status event
+        O->>O: impact on connection, transfer, hotel, group
+        O->>P: request feasible alternatives
+        P-->>O: allowed + rejected options (with reasons)
+        O->>N: create notification, idempotency key
+        alt user offline
+            N->>N: queue notification for later sync
+        else user online
+            N-->>U: push/in-app notification
+        end
+        U->>O: explicit approval of one option
+        O->>B: request booking change (future system only)
+        B-->>O: confirmed or failed
+        O-->>U: update shared itinerary only after confirmation
+    else duplicate or stale
+        I-->>A: ignored; don't overwrite current state
+    end

@@ -1,0 +1,13 @@
+flowchart TB
+    Providers[Flight provider APIs / email parsing] --> Adapters[Adapters: normalize events]
+    Adapters --> Queue[Durable queue + retry / backoff]
+    Queue --> Dedup[Validate event_id / source timestamp]
+    Dedup --> Engine[Trip orchestration + impact rules]
+    Engine --> Rules[Alternatives: visa / baggage / timezones / group]
+    Rules --> Approve[Approval by traveller]
+    Approve --> Booking[Booking supplier APIs - production only]
+    Engine --> State[Travel plan database / versioned revisions]
+    Engine --> Notice[Notification queue: push / email / in-app]
+    Notice --> Offline[Offline sync when connection returns]
+    State --> UI[Traveller / group interface]
+    Offline --> UI
